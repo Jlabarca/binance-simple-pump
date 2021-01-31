@@ -58,6 +58,21 @@ async function askAndBuy(){
     amount = binance.roundStep(amount, symbolInfo.stepSize);
 
     await binance.marketBuy(symbol, amount);
+
+    log.info(symbol)
+    log.info(`Current Price: ${price} `)
+    log.info(`${symbol} minQty: ${symbolInfo.minQty} minNotional: ${symbolInfo.minNotional} stepSize: ${symbolInfo.stepSize} `)
+    log.success(`Bought ${amount}`);
+
+    var shouldSell = await utils.ask("Sell? (type sell if you want to market sell what you bought) ");
+    if(shouldSell.toUpperCase() == "SELL") {
+        await binance.marketSell(symbol, amount);
+        log.success(`Sold`);
+        await utils.sleep(1000);
+        balances = await utils.loadBalances(binance);
+        var newBalance = balances[currencySymbol].available;
+        log.info(`${currencySymbol} change: ${utils.toFixed(newBalance - balance)}`);
+    }
 }
 
 init();
