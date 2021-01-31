@@ -1,0 +1,23 @@
+{
+  "name": "binance-simple-pump",
+  "version": "1.0.0",
+  "description": "binance simple pump buyer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jlabarca/binance-simple-pump.git"
+  },
+  "author": "jlabarca",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Jlabarca/binance-simple-pump/issues"
+  },
+  "homepage": "https://github.com/Jlabarca/binance-simple-pump#readme",
+  "dependencies": {
+    "consola": "^2.15.0",
+    "node-binance-api": "^0.12.4"
+  }
+}
