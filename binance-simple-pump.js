@@ -1,7 +1,7 @@
 const config = require('./config');
 const log = require('consola')
 const Binance = require('node-binance-api');
-const ask = require('./utils').ask;
+const utils = require('./utils');
 
 const binance = new Binance().options({
     APIKEY: config.api_key,
@@ -22,23 +22,20 @@ async function init(){
 }
 
 async function preload(){
+    await binance.useServerTime();
     log.info("Preloading prices");
     prices = await binance.prices();
     log.info("Preloading balances");
-    await binance.useServerTime();
-    await binance.balance(async (error, bals) => {
-        if ( error ) return log.error(error);
-        balances = bals;
-    });
+    balances = await utils.loadBalances(binance);
 }
 
 async function askAndBuy(){
-    var currencySymbol = await ask("Currency (USDT, BTC, ...): ");
+    var currencySymbol = await utils.ask("Currency (USDT, BTC, ...): ");
     currencySymbol = currencySymbol.toUpperCase();
     var balance = balances[currencySymbol].available;
     log.info(`${currencySymbol} balance: ${balance}`);
 
-    var buySymbol = await ask("Coin to buy: ");
+    var buySymbol = await utils.ask("Coin to buy: ");
     buySymbol = buySymbol.toUpperCase();
     var symbol = buySymbol+currencySymbol;
     var price = prices[symbol];
