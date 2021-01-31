@@ -2,8 +2,8 @@
   "name": "binance-simple-pump",
   "version": "1.0.0",
   "description": "binance simple pump buyer",
-  "main": "index.js",
   "scripts": {
+  "main": "binance-simple-pump.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

@@ -13,11 +13,11 @@ var balances;
 
 async function init(){
     preload()
-    .then(() => log.info('Completed'))
-    .catch(log.error);
-
-    askAndBuy()
-    .then(() => log.info('Completed'))
+    .then(() => {
+        askAndBuy()
+        .then(() => log.info('Completed'))
+        .catch(log.error);
+    })
     .catch(log.error);
 }
 
