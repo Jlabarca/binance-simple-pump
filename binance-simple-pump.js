@@ -8,6 +8,7 @@ const binance = new Binance().options({
     APISECRET: config.api_secret
 });
 
+var exchangeInfo;
 var prices;
 var balances;
 
@@ -15,7 +16,7 @@ async function init(){
     preload()
     .then(() => {
         askAndBuy()
-        .then(() => log.info('Completed'))
+        .then(() => log.success('Completed'))
         .catch(log.error);
     })
     .catch(log.error);
@@ -23,6 +24,8 @@ async function init(){
 
 async function preload(){
     await binance.useServerTime();
+    log.info("Preloading exchangeInfo");
+    exchangeInfo = await utils.loadExchangeInfo(binance);
     log.info("Preloading prices");
     prices = await binance.prices();
     log.info("Preloading balances");
@@ -39,11 +42,21 @@ async function askAndBuy(){
     buySymbol = buySymbol.toUpperCase();
     var symbol = buySymbol+currencySymbol;
     var price = prices[symbol];
-    log.info(symbol)
-    log.info(`Current Price: ${price}`)
+    var symbolInfo = exchangeInfo[symbol];
 
-    var amount = Math.floor((balance*config.investment) / (price * 1+config.market_buy_inflation));
-    log.info(`Buying ${amount}`);
+    // Set minimum order amount with minQty
+    if ( amount < symbolInfo.minQty ) 
+        amount = symbolInfo.minQty;
+
+    // Set minimum order amount with minNotional
+    if ( price * amount < symbolInfo.minNotional )
+        amount = symbolInfo.minNotional / price;
+
+    var amount = (Number(balance)*config.investment) / (Number(price) * (1+config.market_buy_inflation));
+
+    // Round to stepSize
+    amount = binance.roundStep(amount, symbolInfo.stepSize);
+
     await binance.marketBuy(symbol, amount);
 }
 
