@@ -13,8 +13,16 @@ var prices;
 var balances;
 
 async function init(){
-    if(process.argv[2] == "-sell")
     let arg1 = process.argv[2].toLowerCase();
+    if(arg1 == "-sellall")
+        preload(true, false)
+        .then(() => {
+            askAndSellAll()
+            .then(() => log.success('Completed'))
+            .catch(log.error);
+        })
+        .catch(log.error);
+    else if(arg1 == "-sell")
         preload(true, false)
         .then(() => {
             askAndSell()
@@ -133,5 +141,28 @@ async function askAndSell(){
     }
 }
 
+async function askAndSellAll(){
+    var currencySymbol = await utils.ask("Currency (USDT, BTC, ...): ");
+    currencySymbol = currencySymbol.toUpperCase().trim();
+    Object.keys(balances).forEach(async coinSymbol => {
+        if(coinSymbol === currencySymbol) return;
+        if(coinSymbol === 'BNB') return;
+
+        let element = balances[coinSymbol];
+        try {
+            var balance = Number(element.available);
+            if(balance == 0) return;
+            log.info(`${coinSymbol} balance: ${balance}`);
+            var symbol = coinSymbol+currencySymbol;
+            var symbolInfo = exchangeInfo[symbol];
+            var amount = binance.roundStep(balance, symbolInfo.stepSize);
+            await binance.marketSell(symbol, amount);
+            log.success(`Sold`);
+        } catch (error) {
+            if(coinSymbol === 'BTC')
+                log.error(error)
+        }
+    });
+}
 
 init();
