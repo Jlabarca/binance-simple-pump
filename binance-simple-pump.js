@@ -13,9 +13,9 @@ var prices;
 var balances;
 
 async function init(){
-
     if(process.argv[2] == "-sell")
-        preload(false, false)
+    let arg1 = process.argv[2].toLowerCase();
+        preload(true, false)
         .then(() => {
             askAndSell()
             .then(() => log.success('Completed'))
@@ -50,12 +50,14 @@ async function preload(extractExchangeInfo = true, extractPrices = true){
 
 async function askAndBuy(){
     var currencySymbol = await utils.ask("Currency (USDT, BTC, ...): ");
-    currencySymbol = currencySymbol.toUpperCase();
+    currencySymbol = currencySymbol.toUpperCase().trim();
     var balance = balances[currencySymbol].available;
     log.info(`${currencySymbol} balance: ${balance}`);
+    do {
+        var buySymbol = await utils.ask("Coin to buy: ");
+        buySymbol = buySymbol.toUpperCase().trim();
+    } while (buySymbol  === "");
 
-    var buySymbol = await utils.ask("Coin to buy: ");
-    buySymbol = buySymbol.toUpperCase();
     var symbol = buySymbol+currencySymbol;
     var price = prices[symbol];
     var symbolInfo = exchangeInfo[symbol];
@@ -73,40 +75,63 @@ async function askAndBuy(){
     // Round to stepSize
     amount = binance.roundStep(amount, symbolInfo.stepSize);
 
-    await binance.marketBuy(symbol, amount);
+    var marketBuy = await binance.marketBuy(symbol, amount);
+    var boughtPrice = marketBuy.fills[0].price;
+    var expectedInflation = (100 - (boughtPrice * 100 / price)).toFixed(2);
 
     log.info(symbol)
-    log.info(`Current Price: ${price} `)
-    log.info(`${symbol} minQty: ${symbolInfo.minQty} minNotional: ${symbolInfo.minNotional} stepSize: ${symbolInfo.stepSize} `)
-    log.success(`Bought ${amount}`);
-
-    var shouldSell = await utils.ask("Sell? (type sell if you want to market sell what you bought) ");
-    if(shouldSell.toUpperCase() == "SELL") {
-        await binance.marketSell(symbol, amount);
-        log.success(`Sold`);
-        await utils.sleep(1000);
-        balances = await utils.loadBalances(binance);
-        var newBalance = balances[currencySymbol].available;
-        log.info(`${currencySymbol} change: ${utils.toFixed(newBalance - balance)}`);
+    log.info(`Current Price: ${boughtPrice} -  ${expectedInflation}% more than expected`)
+    if(expectedInflation > config.max_buy_inflation){
+        panicSell(symbol, amount, currencySymbol, balance);
+        return;
     }
+
+    log.info(`${symbol} minQty: ${symbolInfo.minQty} minNotional: ${symbolInfo.minNotional} stepSize: ${symbolInfo.stepSize} `)
+    log.success(`Bought ${amount} at ${boughtPrice}`);
+
+    var priceDecimals = utils.countDecimals(boughtPrice);
+    var limitSellPrice = (boughtPrice * (1+config.limitSell)).toFixed(priceDecimals);
+    log.success(`Setting limit sell at ${limitSellPrice}`);
+    var sell = await binance.sell(symbol, amount, limitSellPrice); 
+
+    var shouldSell = await utils.ask("Panic Sell? (type sell if you want to market sell what you bought) ");
+    if(shouldSell.toUpperCase().trim() == "SELL") {
+        // await binance.cancel(symbol, sell.orderId, (error, response, symbol) => {
+        //     log.info(symbol+" cancel response:", response);
+        // });
+        await binance.cancelAll(symbol)
+        panicSell(symbol, amount, currencySymbol, balance);
+    }
+}
+
+async function panicSell(symbol, amount, currencySymbol, balance) {
+    log.info(`Panic SELL`);
+    await binance.marketSell(symbol, amount);
+    log.success(`Sold`);
+    await utils.sleep(1000);
+    balances = await utils.loadBalances(binance);
+    var newBalance = balances[currencySymbol].available;
+    log.info(`${currencySymbol} change: ${utils.toFixed(newBalance - balance)}`);
 }
 
 async function askAndSell(){
     var currencySymbol = await utils.ask("Currency (USDT, BTC, ...): ");
     currencySymbol = currencySymbol.toUpperCase();
     var coinSymbol = await utils.ask("Coin to Sell: ");
-    coinSymbol = coinSymbol.toUpperCase();
+    coinSymbol = coinSymbol.toUpperCase().trim();
     var balance = balances[coinSymbol].available;
 
     log.info(`${coinSymbol} balance: ${balance}`);
 
     var shouldSell = await utils.ask("Sell? (type sell if you want to market sell what you bought) ");
     var symbol = coinSymbol+currencySymbol;
+    var amount = binance.roundStep(amount, symbolInfo.stepSize);
 
     if(shouldSell.toUpperCase() == "SELL") {
-        await binance.marketSell(symbol, balance);
+        await binance.marketSell(symbol, amount);
         log.success(`Sold`);
     }
 }
+
 
 init();
