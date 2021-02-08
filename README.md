@@ -42,11 +42,13 @@ let config = {
 
 
 #### Run app
-```bash
+```c
 //Regular buy and sell
 node binance-simple-pump.js  
+
 //Only selling 
 node binance-simple-pump.js -sell
+
 //Convert all your coins to a specific one
 node binance-simple-pump.js -sellall
 ```
