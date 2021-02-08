@@ -13,8 +13,19 @@ var prices;
 var balances;
 
 async function init(){
-    let arg1 = process.argv[2].toLowerCase();
-    if(arg1 == "-sellall")
+    let option;
+    if(process.argv.length > 2) 
+        option = process.argv[2].toLowerCase()
+
+    if(option == null) {
+        preload()
+        .then(() => {
+            askAndBuy()
+            .then(() => log.success('Completed'))
+            .catch(log.error);
+        })
+        .catch(log.error);
+    } else if(option == "-sellall")
         preload(true, false)
         .then(() => {
             askAndSellAll()
@@ -22,18 +33,10 @@ async function init(){
             .catch(log.error);
         })
         .catch(log.error);
-    else if(arg1 == "-sell")
+    else if(option == "-sell")
         preload(true, false)
         .then(() => {
             askAndSell()
-            .then(() => log.success('Completed'))
-            .catch(log.error);
-        })
-        .catch(log.error);
-    else
-        preload()
-        .then(() => {
-            askAndBuy()
             .then(() => log.success('Completed'))
             .catch(log.error);
         })
