@@ -33,13 +33,20 @@ There you also can set this two values as desired
 ```js
 let config = {
     ...
-    market_buy_inflation: .14, // This is to make sure your buy order gets in. Sets the market buy to current price + inflation percentage
-    investment: .1 // will buy using 10% of your balance
+    market_buy_inflation: .2, // This is to make sure your buy order gets in. Sets the market buy to current price + inflation percentage
+    max_buy_inflation: 1, // panic sell if you bought it with over 100% inflation
+    investment: .1, // will buy using 10% of your balance
+    limitSell: .2 // creates a limit sell at 20% of profit after buying
 };
 ```
 
 
 #### Run app
 ```bash
-node binance-simple-pump.js
+//Regular buy and sell
+node binance-simple-pump.js  
+//Only selling 
+node binance-simple-pump.js -sell
+//Convert all your coins to a specific one
+node binance-simple-pump.js -sellall
 ```
